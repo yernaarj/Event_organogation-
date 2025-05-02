@@ -34,10 +34,10 @@ function ManagerDashboard() {
   const handleDelete = async id => {
     if (!window.confirm(`Удалить заказ #${id}?`)) return;
     try {
-      const res = await fetch(`${API}/orders/${id}`, { method: 'DELETE' });
+      const res = await fetch('/api/orders/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       setOrders(orders.filter(o => o.id !== id));
-      const logsRes = await fetch(`${API}/logs`);
+      const logsRes = await fetch('/api/logs`);
       setLogs(await logsRes.json());
     } catch {
       setError('Ошибка при удалении');
