@@ -15,11 +15,11 @@ from schemas.action_log_schema import ActionLogOut
 
 app = FastAPI()
 
-# CORS_ORIGINS задаётся через окружение (Render → Settings → Env Vars)
-# Значение — строка с разделителем запятыми, например:
-#  https://my-frontend.vercel.app,http://localhost:3000
-raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000")
-origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+# Источник берём из переменной окружения, разделённой запятыми
+# (на Render: Settings → Environment → CORS_ORIGINS)
+raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+origins = [u.strip() for u in raw.split(",") if u.strip()]
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,10 +28,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# ────────────────────────────────────────────────────────────────────────────────
 
-# Создаём таблицы (для SQLite-фallback)
+# Создаём таблицы при старте (если ещё нет)
 Base.metadata.create_all(bind=engine)
 
+# Зависимость для работы с БД
 def get_db():
     db = SessionLocal()
     try:
@@ -40,7 +42,18 @@ def get_db():
         db.close()
 
 
-# === Регистрируем пользователей ===
+# ─── Health-check и Root ───────────────────────────────────────────────────────
+@app.get("/", include_in_schema=False)
+def read_root():
+    return {"message": "Welcome to Event System API"}
+
+@app.get("/health", tags=["health"])
+def health_check():
+    return {"status": "ok"}
+# ────────────────────────────────────────────────────────────────────────────────
+
+
+# ─── Пользователи ───────────────────────────────────────────────────────────────
 @app.post("/register", response_model=UserOut)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
@@ -51,8 +64,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new)
     return new
 
-
-# === Логин ===
 @app.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
@@ -66,9 +77,10 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         "name": db_user.name,
         "role": db_user.role
     }
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === Помещения ===
+# ─── Помещения ─────────────────────────────────────────────────────────────────
 @app.post("/premises", response_model=PremiseOut)
 def create_premise(p: PremiseCreate, db: Session = Depends(get_db)):
     new = Premise(**p.dict())
@@ -80,9 +92,10 @@ def create_premise(p: PremiseCreate, db: Session = Depends(get_db)):
 @app.get("/premises", response_model=list[PremiseOut])
 def get_premises(db: Session = Depends(get_db)):
     return db.query(Premise).all()
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === Заказы ===
+# ─── Заказы ─────────────────────────────────────────────────────────────────────
 @app.post("/orders", response_model=OrderOut)
 def create_order(o: OrderCreate, db: Session = Depends(get_db)):
     conflict = db.query(Order).filter(
@@ -103,20 +116,17 @@ def get_all_orders(db: Session = Depends(get_db)):
     return db.query(Order).all()
 
 @app.put("/orders/{order_id}", response_model=OrderOut)
-def update_order(
-    order_id: int,
-    upd: OrderUpdate,
-    db: Session = Depends(get_db)
-):
+def update_order(order_id: int, upd: OrderUpdate, db: Session = Depends(get_db)):
     order = db.query(Order).get(order_id)
     if not order:
         raise HTTPException(404, "Заказ не найден")
+    # Обновляем поля по тому, что пришло
     for field, val in upd:
         setattr(order, field, val)
     # Логируем правку
     log = ActionLog(
         manager_id=1,
-        manager_name="(будет из jwt или context)",
+        manager_name="(будет из JWT)",
         order_id=order.id,
         action_type="edit"
     )
@@ -133,7 +143,7 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
     # Логируем удаление
     log = ActionLog(
         manager_id=1,
-        manager_name="(будет из jwt или context)",
+        manager_name="(будет из JWT)",
         order_id=order.id,
         action_type="delete"
     )
@@ -148,9 +158,11 @@ def get_client_orders(client_id: int, status: str = None, db: Session = Depends(
     if status:
         q = q.filter(Order.status == status)
     return q.all()
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === Логи действий ===
+# ─── История действий ───────────────────────────────────────────────────────────
 @app.get("/logs", response_model=list[ActionLogOut])
 def get_logs(db: Session = Depends(get_db)):
     return db.query(ActionLog).order_by(ActionLog.timestamp.desc()).all()
+# ────────────────────────────────────────────────────────────────────────────────
