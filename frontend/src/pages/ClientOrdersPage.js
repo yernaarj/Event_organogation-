@@ -3,7 +3,7 @@ import { UserContext } from '../context/UserContext';
 
 function ClientOrdersPage() {
   // Базовый URL теперь всегда '/api'
-  const API = '/api';
+  const API = process.env.REACT_APP_API_URL;
   const { user } = useContext(UserContext);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
@@ -11,7 +11,7 @@ function ClientOrdersPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch('/api/orders');
+        const response = await fetch('${API}/orders');
         const data = await response.json();
         if (response.ok) {
           const clientOrders = data.filter(o => o.client_id === user.user_id);
