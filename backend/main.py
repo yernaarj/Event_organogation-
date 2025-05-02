@@ -1,4 +1,4 @@
-# main.py
+import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -8,7 +8,6 @@ from models.user import User
 from models.premise import Premise
 from models.order import Order
 from models.action_log import ActionLog
-
 from schemas.user_schema import UserCreate, UserOut, UserLogin
 from schemas.premise_schema import PremiseCreate, PremiseOut
 from schemas.order_schema import OrderCreate, OrderOut, OrderUpdate
@@ -16,19 +15,25 @@ from schemas.action_log_schema import ActionLogOut
 
 app = FastAPI()
 
-# --- CORS: разрешить запросы со всех origins (удобно при разработке через ngrok) ---
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+# Источник берём из переменной окружения, разделённой запятыми
+# (на Render: Settings → Environment → CORS_ORIGINS)
+raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+origins = [u.strip() for u in raw.split(",") if u.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],               # <-- вместо жестких доменов
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# ────────────────────────────────────────────────────────────────────────────────
 
-# Создаем таблицы
+# Создаём таблицы при старте (если ещё нет)
 Base.metadata.create_all(bind=engine)
 
-# Зависимость для сессии БД
+# Зависимость для работы с БД
 def get_db():
     db = SessionLocal()
     try:
@@ -36,37 +41,47 @@ def get_db():
     finally:
         db.close()
 
-# --- Корневой маршрут, чтобы «/» давал не 404, а понятный ответ ---
-@app.get("/", summary="Root")
+
+# ─── Health-check и Root ───────────────────────────────────────────────────────
+@app.get("/", include_in_schema=False)
 def read_root():
-    return {"message": "Event System API is up and running!"}
+    return {"message": "Welcome to Event System API"}
+
+@app.get("/health", tags=["health"])
+def health_check():
+    return {"status": "ok"}
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === РЕГИСТРАЦИЯ ===
-@app.post("/register", response_model=UserOut, summary="Register new user")
+# ─── Пользователи ───────────────────────────────────────────────────────────────
+@app.post("/register", response_model=UserOut)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
-        raise HTTPException(status_code=400, detail="Email already used")
-    new_user = User(**user.dict())
-    db.add(new_user)
+        raise HTTPException(400, "Email уже используется")
+    new = User(**user.dict())
+    db.add(new)
     db.commit()
-    db.refresh(new_user)
-    return new_user
+    db.refresh(new)
+    return new
 
-
-# === ЛОГИН ===
-@app.post("/login", summary="Login user")
+@app.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(404, "Пользователь не найден")
     if db_user.password != user.password:
-        raise HTTPException(status_code=401, detail="Wrong password")
-    return {"message": "Login successful", "user_id": db_user.id, "name": db_user.name, "role": db_user.role}
+        raise HTTPException(401, "Неверный пароль")
+    return {
+        "message": "Успешный вход",
+        "user_id": db_user.id,
+        "name": db_user.name,
+        "role": db_user.role
+    }
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === ПОМЕЩЕНИЯ ===
-@app.post("/premises", response_model=PremiseOut, summary="Create a premise")
+# ─── Помещения ─────────────────────────────────────────────────────────────────
+@app.post("/premises", response_model=PremiseOut)
 def create_premise(p: PremiseCreate, db: Session = Depends(get_db)):
     new = Premise(**p.dict())
     db.add(new)
@@ -74,72 +89,80 @@ def create_premise(p: PremiseCreate, db: Session = Depends(get_db)):
     db.refresh(new)
     return new
 
-@app.get("/premises", response_model=list[PremiseOut], summary="List all premises")
+@app.get("/premises", response_model=list[PremiseOut])
 def get_premises(db: Session = Depends(get_db)):
     return db.query(Premise).all()
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === ЗАКАЗЫ ===
-@app.post("/orders", response_model=OrderOut, summary="Create an order")
+# ─── Заказы ─────────────────────────────────────────────────────────────────────
+@app.post("/orders", response_model=OrderOut)
 def create_order(o: OrderCreate, db: Session = Depends(get_db)):
-    # Проверка на пересечение дат
-    overlap = db.query(Order).filter(
+    conflict = db.query(Order).filter(
         Order.premise_id == o.premise_id,
         Order.date_to >= o.date_from,
         Order.date_from <= o.date_to
     ).first()
-    if overlap:
-        raise HTTPException(status_code=400, detail="Premise is already booked for these dates")
-
-    new = Order(client_id=o.client_id, premise_id=o.premise_id,
-                date_from=o.date_from, date_to=o.date_to, status="pending")
+    if conflict:
+        raise HTTPException(400, "Помещение занято на выбранные даты.")
+    new = Order(**o.dict(), status="pending")
     db.add(new)
     db.commit()
     db.refresh(new)
     return new
 
-@app.get("/orders", response_model=list[OrderOut], summary="List all orders")
+@app.get("/orders", response_model=list[OrderOut])
 def get_all_orders(db: Session = Depends(get_db)):
     return db.query(Order).all()
 
-@app.put("/orders/{order_id}", response_model=OrderOut, summary="Update an order")
+@app.put("/orders/{order_id}", response_model=OrderOut)
 def update_order(order_id: int, upd: OrderUpdate, db: Session = Depends(get_db)):
     order = db.query(Order).get(order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    # Обновляем поля
-    order.client_id = upd.client_id
-    order.premise_id = upd.premise_id
-    order.date_from = upd.date_from
-    order.date_to = upd.date_to
-    if upd.status:
-        order.status = upd.status
-    # Логируем действие
-    db.add(ActionLog(manager_id=1, manager_name="ManagerName", order_id=order.id, action_type="edit"))
+        raise HTTPException(404, "Заказ не найден")
+    # Обновляем поля по тому, что пришло
+    for field, val in upd:
+        setattr(order, field, val)
+    # Логируем правку
+    log = ActionLog(
+        manager_id=1,
+        manager_name="(будет из JWT)",
+        order_id=order.id,
+        action_type="edit"
+    )
+    db.add(log)
     db.commit()
     db.refresh(order)
     return order
 
-@app.delete("/orders/{order_id}", summary="Delete an order")
+@app.delete("/orders/{order_id}")
 def delete_order(order_id: int, db: Session = Depends(get_db)):
     order = db.query(Order).get(order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    # Логируем действие
-    db.add(ActionLog(manager_id=1, manager_name="ManagerName", order_id=order.id, action_type="delete"))
+        raise HTTPException(404, "Заказ не найден")
+    # Логируем удаление
+    log = ActionLog(
+        manager_id=1,
+        manager_name="(будет из JWT)",
+        order_id=order.id,
+        action_type="delete"
+    )
+    db.add(log)
     db.delete(order)
     db.commit()
-    return {"message": "Order deleted"}
+    return {"message": "Заказ удалён"}
 
-@app.get("/client-orders/{client_id}", response_model=list[OrderOut], summary="Get orders by client (and optional status)")
-def get_client_orders(client_id: int, status: str | None = None, db: Session = Depends(get_db)):
+@app.get("/client-orders/{client_id}", response_model=list[OrderOut])
+def get_client_orders(client_id: int, status: str = None, db: Session = Depends(get_db)):
     q = db.query(Order).filter(Order.client_id == client_id)
     if status:
         q = q.filter(Order.status == status)
     return q.all()
+# ────────────────────────────────────────────────────────────────────────────────
 
 
-# === ЛОГИ ДЕЙСТВИЙ ===
-@app.get("/logs", response_model=list[ActionLogOut], summary="Action logs")
+# ─── История действий ───────────────────────────────────────────────────────────
+@app.get("/logs", response_model=list[ActionLogOut])
 def get_logs(db: Session = Depends(get_db)):
     return db.query(ActionLog).order_by(ActionLog.timestamp.desc()).all()
+# ────────────────────────────────────────────────────────────────────────────────

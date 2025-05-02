@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 {  "version": 2,
+=======
+{
+    "version": 2,
+>>>>>>> cec8f0139bc1e914f6b8bbd6a3d25e8c9b54eaf0
     "builds": [
       {
         "src": "frontend/package.json",
