@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 
 function CreateOrderPage() {
-  const API = '/api';
+  const API = process.env.REACT_APP_API_URL;
   const { user } = useContext(UserContext);
   const [premises, setPremises] = useState([]);
   const [formData, setFormData] = useState({
@@ -15,7 +15,7 @@ function CreateOrderPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/premises'); 
+        const res = await fetch('${API}/premises'); 
         setPremises(await res.json());
       } catch {
         setMessage('Не удалось загрузить список помещений');
@@ -40,7 +40,7 @@ function CreateOrderPage() {
       date_to: formData.date_to
     };
     try {
-      const res = await fetch('/api/orders`, {
+      const res = await fetch('${API}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(order)
