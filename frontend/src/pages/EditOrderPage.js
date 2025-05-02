@@ -52,7 +52,7 @@ export default function EditOrderPage() {
   const handleDelete = async () => {
     if (!window.confirm('Удалить заказ?')) return;
     try {
-      const res = await fetch(`${API}/orders/${orderId}`, { method: 'DELETE' });
+      const res = await fetch('/api/orders/${orderId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       alert('Удалён');
       navigate(user.role === 'manager' ? '/manager-dashboard' : '/my-orders');
