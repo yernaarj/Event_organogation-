@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+// src/pages/RegisterPage.js
+import React, { useState } from 'react';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -6,52 +7,62 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'client'
-  })
-  const [message, setMessage] = useState('')
+    role: 'client',
+  });
+  const [message, setMessage] = useState('');
 
   const handleChange = e => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   const handleSubmit = async e => {
-    e.preventDefault()
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setMessage('Пожалуйста, заполните все поля')
-      return
+    e.preventDefault();
+    // Проверка: все поля заполнены
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
+      setMessage('Пожалуйста, заполните все поля');
+      return;
     }
+    // Проверка: совпадают ли пароли
     if (formData.password !== formData.confirmPassword) {
-      setMessage('Пароли не совпадают')
-      return
+      setMessage('Пароли не совпадают');
+      return;
     }
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role
-        })
-      })
-      const data = await res.json()
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/register`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role: formData.role,
+          }),
+        }
+      );
+      const data = await res.json();
       if (res.ok) {
-        setMessage('Успешная регистрация!')
+        setMessage('Успешная регистрация!');
         setFormData({
           name: '',
           email: '',
           password: '',
           confirmPassword: '',
-          role: 'client'
-        })
+          role: 'client',
+        });
       } else {
-        setMessage(data.detail || 'Ошибка при регистрации')
+        setMessage(data.detail || 'Ошибка при регистрации');
       }
     } catch {
-      setMessage('Ошибка соединения к серверу')
+      setMessage('Ошибка соединения к серверу');
     }
-  }
+  };
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -65,7 +76,8 @@ export default function RegisterPage() {
           onChange={handleChange}
           required
         />
-        <br /><br />
+        <br />
+        <br />
         <input
           type="email"
           name="email"
@@ -74,7 +86,8 @@ export default function RegisterPage() {
           onChange={handleChange}
           required
         />
-        <br /><br />
+        <br />
+        <br />
         <input
           type="password"
           name="password"
@@ -83,7 +96,8 @@ export default function RegisterPage() {
           onChange={handleChange}
           required
         />
-        <br /><br />
+        <br />
+        <br />
         <input
           type="password"
           name="confirmPassword"
@@ -92,14 +106,21 @@ export default function RegisterPage() {
           onChange={handleChange}
           required
         />
-        <br /><br />
-        <select name="role" value={formData.role} onChange={handleChange}>
+        <br />
+        <br />
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+        >
           <option value="client">Клиент</option>
           <option value="manager">Менеджер</option>
         </select>
-        <br /><br />
+        <br />
+        <br />
         <button type="submit">Зарегистрироваться</button>
       </form>
       {message && <p style={{ color: 'red' }}>{message}</p>}
     </div>
+  );
 }
