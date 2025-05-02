@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 function RegisterPage() {
-  const API = '/api';
+  const API = process.env.REACT_APP_API_URL;
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', role: 'client'
   });
@@ -21,7 +21,7 @@ function RegisterPage() {
       setMessage('Пароли не совпадают'); return;
     }
     try {
-      const res =  await fetch('/api/register', { … })
+      const res =  await fetch('${API}/register', { … })
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify({ name, email, password, role })
