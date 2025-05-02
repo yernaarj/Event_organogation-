@@ -21,7 +21,7 @@ function RegisterPage() {
       setMessage('Пароли не совпадают'); return;
     }
     try {
-      const res = await fetch(`${API}/register`, {
+      const res = await fetch(`/api/register`, {
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify({ name, email, password, role })
