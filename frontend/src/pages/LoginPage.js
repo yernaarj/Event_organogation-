@@ -1,51 +1,67 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../context/UserContext';
+import React, { useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { UserContext } from '../context/UserContext'
 
-function LoginPage() {
-  const API = process.env.REACT_APP_API_URL;
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [message, setMessage] = useState('');
-  const navigate = useNavigate();
-  const { setUser } = useContext(UserContext);
+export default function LoginPage() {
+  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [message, setMessage] = useState('')
+  const navigate = useNavigate()
+  const { setUser } = useContext(UserContext)
 
-  const handleChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = e => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    e.preventDefault()
     if (!formData.email || !formData.password) {
-      setMessage('Введите email и пароль');
-      return;
+      setMessage('Пожалуйста, введите и почту, и пароль')
+      return
     }
     try {
-      const res =await fetch('${API}/login',       { … })
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage(data.detail || 'Ошибка входа');
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setUser(data)
+        if (data.role === 'manager') navigate('/manager-dashboard')
+        else navigate('/create-order')
       } else {
-        setUser(data);
-        navigate(data.role === 'manager' ? '/manager-dashboard' : '/create-order');
+        setMessage(data.detail || 'Ошибка входа')
       }
     } catch {
-      setMessage('Не удалось подключиться к серверу');
+      setMessage('Ошибка подключения к серверу')
     }
-  };
+  }
 
   return (
     <div style={{ textAlign: 'center' }}>
       <h2>Вход</h2>
-      <form onSubmit={handleSubmit} noValidate>
-        <input type="email"    name="email"    placeholder="Email"    value={formData.email}    onChange={handleChange} /><br/><br/>
-        <input type="password" name="password" placeholder="Пароль"  value={formData.password} onChange={handleChange} /><br/><br/>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+        <br /><br />
+        <input
+          type="password"
+          name="password"
+          placeholder="Пароль"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+        <br /><br />
         <button type="submit">Войти</button>
       </form>
-      {message && <p style={{ color:'red' }}>{message}</p>}
+      {message && <p style={{ color: 'red' }}>{message}</p>}
     </div>
-  );
+  )
 }
-
-export default LoginPage;
