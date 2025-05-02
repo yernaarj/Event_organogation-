@@ -13,7 +13,7 @@ function ManagerDashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API}/orders`);
+        const res = await fetch(`/api/orders`);
         if (!res.ok) throw new Error();
         setOrders(await res.json());
       } catch {
