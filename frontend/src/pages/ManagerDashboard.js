@@ -3,7 +3,7 @@ import { UserContext } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 
 function ManagerDashboard() {
-  const API = '/api';
+  const API = process.env.REACT_APP_API_URL;
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -13,7 +13,7 @@ function ManagerDashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/orders`);
+        const res = await fetch(`${API}/orders`);
         if (!res.ok) throw new Error();
         setOrders(await res.json());
       } catch {
@@ -22,7 +22,7 @@ function ManagerDashboard() {
     })();
     (async () => {
       try {
-        const res = await fetch(`/api/logs`);
+        const res = await fetch(`${API}/logs`);
         if (!res.ok) throw new Error();
         setLogs(await res.json());
       } catch {
