@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 
 function ClientOrdersPage() {
-  const API = process.env.REACT_APP_API_URL;    // ← здесь базовый URL вашего бэкенда
+  const response = await fetch('/api/orders');    // ← здесь базовый URL вашего бэкенда
   const { user } = useContext(UserContext);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
