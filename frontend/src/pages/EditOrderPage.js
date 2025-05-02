@@ -15,7 +15,7 @@ export default function EditOrderPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/orders/${orderId}`);
+        const res =  await fetch(`/api/orders/${orderId}`, { … })
         if (!res.ok) throw new Error();
         const o = await res.json();
         setOrder(o);
@@ -32,7 +32,7 @@ export default function EditOrderPage() {
     e.preventDefault();
     if (!window.confirm('Сохранить изменения?')) return;
     try {
-      const res = await fetch(`${API}/orders/${orderId}`, {
+      const res = await fetch(`/api/orders/${orderId}`, { … })
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
