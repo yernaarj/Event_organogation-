@@ -12,9 +12,9 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/backend/main.py"
-    }
+    // Всё, что /api/xxx → наш FastAPI
+    { "src": "/api/(.*)", "dest": "/backend/main.py" },
+    // Остальное (/, /login, /my-orders и т.д.) → статические файлы React
+    { "src": "/(.*)",      "dest": "/frontend/build/$1" }
   ]
 }
