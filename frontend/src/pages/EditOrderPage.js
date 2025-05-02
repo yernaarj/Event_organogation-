@@ -1,69 +1,36 @@
-// src/pages/EditOrderPage.js
-
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
 
 export default function EditOrderPage() {
-  const API = process.env.REACT_APP_API_URL;        // ← базовый URL вашего бэка
+  const API = '/api';
   const { user } = useContext(UserContext);
   const { orderId } = useParams();
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
-  const [formData, setFormData] = useState({
-    date_from: '',
-    date_to: '',
-    status: ''
-  });
+  const [formData, setFormData] = useState({ date_from: '', date_to: '', status: '' });
   const [message, setMessage] = useState('');
 
-  // Загрузка данных заказа
   useEffect(() => {
-    async function fetchOrder() {
+    (async () => {
       try {
-        const res = await fetch(`${API}/orders`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          setMessage('Ошибка при загрузке заказа');
-          return;
-        }
-
-        const o = data.find(o => o.id === Number(orderId));
-        if (!o) {
-          setMessage('Заказ не найден');
-          return;
-        }
-
+        const res = await fetch(`${API}/orders/${orderId}`);
+        if (!res.ok) throw new Error();
+        const o = await res.json();
         setOrder(o);
-        setFormData({
-          date_from: o.date_from,
-          date_to: o.date_to,
-          status: o.status
-        });
+        setFormData({ date_from: o.date_from, date_to: o.date_to, status: o.status });
       } catch {
-        setMessage('Не удалось подключиться к серверу');
+        setMessage('Не удалось загрузить заказ');
       }
-    }
-    fetchOrder();
-  }, [API, orderId]);
+    })();
+  }, [orderId]);
 
-  const handleChange = e => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
+  const handleChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setMessage('');
-
-    if (!window.confirm('Вы действительно хотите сохранить изменения?')) {
-      return;
-    }
-
+    if (!window.confirm('Сохранить изменения?')) return;
     try {
       const res = await fetch(`${API}/orders/${orderId}`, {
         method: 'PUT',
@@ -71,117 +38,54 @@ export default function EditOrderPage() {
         body: JSON.stringify({
           client_id: order.client_id,
           premise_id: order.premise_id,
-          date_from: formData.date_from,
-          date_to: formData.date_to,
-          status: formData.status
+          ...formData
         })
       });
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage('Заказ успешно обновлён');
-        navigate(
-          user.role === 'manager'
-            ? '/manager-dashboard'
-            : '/my-orders'
-        );
-      } else {
-        setMessage(data.detail || 'Ошибка при обновлении заказа');
-      }
+      if (!res.ok) throw new Error();
+      setMessage('Заказ обновлён');
+      navigate(user.role === 'manager' ? '/manager-dashboard' : '/my-orders');
     } catch {
-      setMessage('Ошибка соединения с сервером');
+      setMessage('Ошибка при обновлении');
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Вы действительно хотите удалить заказ?')) {
-      return;
-    }
-
+    if (!window.confirm('Удалить заказ?')) return;
     try {
-      const res = await fetch(`${API}/orders/${orderId}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        alert('Заказ удалён');
-        navigate(
-          user.role === 'manager'
-            ? '/manager-dashboard'
-            : '/my-orders'
-        );
-      } else {
-        setMessage(data.detail || 'Ошибка при удалении заказа');
-      }
+      const res = await fetch(`${API}/orders/${orderId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      alert('Удалён');
+      navigate(user.role === 'manager' ? '/manager-dashboard' : '/my-orders');
     } catch {
-      setMessage('Ошибка соединения с сервером');
+      setMessage('Ошибка при удалении');
     }
   };
 
-  if (!order) {
-    return (
-      <div style={{ textAlign: 'center', padding: '20px' }}>
-        {message || 'Загрузка...'}
-      </div>
-    );
-  }
+  if (!order) return <div style={{ textAlign:'center' }}>{message || 'Загрузка...'}</div>;
 
   return (
-    <div style={{ textAlign: 'center', padding: '20px' }}>
+    <div style={{ textAlign: 'center', padding: 20 }}>
       <h2>Редактировать заказ #{order.id}</h2>
-      {message && (
-        <p style={{ color: message.startsWith('Ошибка') ? 'red' : 'green' }}>
-          {message}
-        </p>
-      )}
-
+      {message && <p style={{ color: 'red' }}>{message}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>
-            Дата начала:<br/>
-            <input
-              type="date"
-              name="date_from"
-              value={formData.date_from}
-              onChange={handleChange}
-              required
-            />
-          </label>
-        </div>
-        <br/>
+          <label>С:</label><br/>
+          <input type="date" name="date_from" value={formData.date_from} onChange={handleChange} required/>
+        </div><br/>
         <div>
-          <label>
-            Дата окончания:<br/>
-            <input
-              type="date"
-              name="date_to"
-              value={formData.date_to}
-              onChange={handleChange}
-              required
-            />
-          </label>
-        </div>
-        <br/>
+          <label>По:</label><br/>
+          <input type="date" name="date_to" value={formData.date_to} onChange={handleChange} required/>
+        </div><br/>
         <div>
-          <label>
-            Статус:<br/>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-            >
-              <option value="pending">Ожидает</option>
-              <option value="confirmed">Подтверждён</option>
-              <option value="cancelled">Отменён</option>
-            </select>
-          </label>
-        </div>
-        <br/>
-        <button type="submit">Сохранить изменения</button>
-      </form>
-
-      <br/>
+          <label>Статус:</label><br/>
+          <select name="status" value={formData.status} onChange={handleChange}>
+            <option value="pending">Ожидает</option>
+            <option value="confirmed">Подтверждён</option>
+            <option value="cancelled">Отменён</option>
+          </select>
+        </div><br/>
+        <button type="submit">Сохранить</button>
+      </form><br/>
       <button onClick={handleDelete}>Удалить заказ</button>
     </div>
   );
