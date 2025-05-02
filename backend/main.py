@@ -22,11 +22,11 @@ raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
 origins = [u.strip() for u in raw.split(",") if u.strip()]
 
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+  CORSMiddleware,
+  allow_origins=["https://event-organogation-fob1.vercel.app/"],
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
 )
 # ────────────────────────────────────────────────────────────────────────────────
 
