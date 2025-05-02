@@ -40,7 +40,7 @@ function CreateOrderPage() {
       date_to: formData.date_to
     };
     try {
-      const res = await fetch(`${API}/orders`, {
+      const res = await fetch('/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(order)
