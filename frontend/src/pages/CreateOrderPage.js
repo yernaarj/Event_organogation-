@@ -15,7 +15,7 @@ function CreateOrderPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API}/premises`);
+        const res = await fetch('/api/premises'); 
         setPremises(await res.json());
       } catch {
         setMessage('Не удалось загрузить список помещений');
