@@ -18,12 +18,12 @@ app = FastAPI()
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 # Источник берём из переменной окружения, разделённой запятыми
 # (на Render: Settings → Environment → CORS_ORIGINS)
-raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+raw = os.getenv("CORS_ORIGINS", "")
 origins = [u.strip() for u in raw.split(",") if u.strip()]
 
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["https://event-organogation-fob1.vercel.app/"],
+  allow_origins=origins,
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],
