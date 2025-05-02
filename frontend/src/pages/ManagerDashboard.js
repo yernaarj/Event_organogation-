@@ -1,73 +1,65 @@
-// src/pages/ManagerDashboard.js
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 
-export default function ManagerDashboard() {
-  const API = process.env.REACT_APP_API_URL;      // ← берём URL бэкенда из .env
+function ManagerDashboard() {
+  const API = '/api';
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
-
   const [orders, setOrders] = useState([]);
-  const [logs, setLogs]     = useState([]);
-  const [error, setError]   = useState('');
+  const [logs, setLogs]       = useState([]);
+  const [error, setError]     = useState('');
 
-  // Загрузка всех заказов
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`${API}/orders`);
-        if (!res.ok) throw new Error('Не удалось загрузить заказы');
+        if (!res.ok) throw new Error();
         setOrders(await res.json());
-      } catch (e) {
-        setError(e.message);
+      } catch {
+        setError('Не удалось загрузить заказы');
       }
     })();
-  }, [API]);
-
-  // Загрузка журнала действий
-  useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`${API}/logs`);
-        if (!res.ok) throw new Error('Не удалось загрузить журнал');
+        if (!res.ok) throw new Error();
         setLogs(await res.json());
-      } catch (e) {
-        setError(e.message);
+      } catch {
+        setError('Не удалось загрузить журнал');
       }
     })();
-  }, [API]);
+  }, []);
 
-  const handleDelete = async (orderId) => {
-    if (!window.confirm(`Вы действительно хотите удалить заказ #${orderId}?`)) return;
+  const handleDelete = async id => {
+    if (!window.confirm(`Удалить заказ #${id}?`)) return;
     try {
-      const res = await fetch(`${API}/orders/${orderId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Ошибка при удалении');
-      // Обновляем списки
-      setOrders(orders.filter(o => o.id !== orderId));
+      const res = await fetch(`${API}/orders/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setOrders(orders.filter(o => o.id !== id));
       const logsRes = await fetch(`${API}/logs`);
       setLogs(await logsRes.json());
-    } catch (e) {
-      setError(e.message);
+    } catch {
+      setError('Ошибка при удалении');
     }
   };
 
-  const handleEdit = (order) => {
-    if (!window.confirm(`Вы действительно хотите отредактировать заказ #${order.id}?`)) return;
-    navigate(`/orders/${order.id}/edit`, { state: { order } });
+  const handleEdit = o => {
+    if (!window.confirm(`Редактировать заказ #${o.id}?`)) return;
+    navigate(`/orders/${o.id}/edit`);
   };
 
   return (
-    <div style={{ padding: 20, textAlign: 'center' }}>
-      <h2>Панель менеджера {user?.name && `( ${user.name} )`}</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div style={{ padding: 20 }}>
+      <h2>Панель менеджера ({user?.name})</h2>
+      {error && <p style={{ color:'red' }}>{error}</p>}
 
       <section>
         <h3>Все заказы</h3>
         {orders.length === 0
           ? <p>Нет заказов</p>
           : (
-            <table style={{ margin: '0 auto', borderCollapse: 'collapse' }}>
+            <table border="1" cellPadding="8">
               <thead>
                 <tr>
                   <th>ID</th><th>Клиент</th><th>Зал</th><th>С</th><th>По</th><th>Статус</th><th>Действия</th>
@@ -83,8 +75,8 @@ export default function ManagerDashboard() {
                     <td>{o.date_to}</td>
                     <td>{o.status}</td>
                     <td>
-                      <button onClick={() => handleEdit(o)}>Ред.</button>{' '}
-                      <button onClick={() => handleDelete(o.id)}>Уд.</button>
+                      <button onClick={() => handleEdit(o)}>Редактировать</button>{' '}
+                      <button onClick={() => handleDelete(o.id)}>Удалить</button>
                     </td>
                   </tr>
                 ))}
@@ -99,20 +91,20 @@ export default function ManagerDashboard() {
         {logs.length === 0
           ? <p>Пусто</p>
           : (
-            <table style={{ margin: '0 auto', borderCollapse: 'collapse' }}>
+            <table border="1" cellPadding="8">
               <thead>
                 <tr>
                   <th>#</th><th>Менеджер</th><th>Действие</th><th>Заказ ID</th><th>Время</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.map(log => (
-                  <tr key={log.id}>
-                    <td>{log.id}</td>
-                    <td>{log.manager_name} (#{log.manager_id})</td>
-                    <td>{log.action_type}</td>
-                    <td>{log.order_id}</td>
-                    <td>{new Date(log.timestamp).toLocaleString()}</td>
+                {logs.map(l => (
+                  <tr key={l.id}>
+                    <td>{l.id}</td>
+                    <td>{l.manager_name} (#{l.manager_id})</td>
+                    <td>{l.action_type}</td>
+                    <td>{l.order_id}</td>
+                    <td>{new Date(l.timestamp).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -123,3 +115,5 @@ export default function ManagerDashboard() {
     </div>
   );
 }
+
+export default ManagerDashboard;
