@@ -1,16 +1,17 @@
-{
-    "projects": [
+{  "version": 2,
+    "builds": [
       {
-        "rootDirectory": "frontend",
-        "buildCommand": "npm run build",
-        "outputDirectory": "build"
+        "src": "frontend/package.json",
+        "use": "@vercel/static-build",
+        "config": { "distDir": "build" }
       },
       {
-        "rootDirectory": "backend",
-        "buildCommand": "pip install -r requirements.txt",
-        "devCommand": "uvicorn main:app --reload --host 0.0.0.0 --port 8000",
-        "routes": [{ "src": "/api/(.*)", "dest": "backend/main.py" }]
+        "src": "backend/main.py",
+        "use": "@vercel/python"
       }
+    ],
+    "routes": [
+      { "src": "/api(/.*)?", "dest": "backend/main.py" }
     ]
   }
   

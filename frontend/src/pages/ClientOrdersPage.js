@@ -1,7 +1,9 @@
+// src/pages/ClientOrdersPage.js
 import React, { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 
 function ClientOrdersPage() {
+  const API = process.env.REACT_APP_API_URL;    // ← здесь базовый URL вашего бэкенда
   const { user } = useContext(UserContext);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
@@ -9,7 +11,7 @@ function ClientOrdersPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/orders');
+        const response = await fetch(`${API}/orders`);
         const data = await response.json();
         if (response.ok) {
           const clientOrders = data.filter(order => order.client_id === user.user_id);
@@ -25,16 +27,16 @@ function ClientOrdersPage() {
     if (user) {
       fetchOrders();
     }
-  }, [user]);
+  }, [user, API]);
 
-  const pending = orders.filter(o => o.status === 'pending');
+  const pending   = orders.filter(o => o.status === 'pending');
   const confirmed = orders.filter(o => o.status === 'confirmed');
   const cancelled = orders.filter(o => o.status === 'cancelled');
 
   return (
     <div style={{ textAlign: 'center' }}>
       <h2>Мои заказы</h2>
-      {error && <p>{error}</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <h3>Ожидают</h3>
       {pending.length ? pending.map(o => (
