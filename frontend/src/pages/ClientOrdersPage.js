@@ -1,9 +1,9 @@
-// src/pages/ClientOrdersPage.js
 import React, { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 
 function ClientOrdersPage() {
-  const response = await fetch('/api/orders');    // ← здесь базовый URL вашего бэкенда
+  // Базовый URL теперь всегда '/api'
+  const API = '/api';
   const { user } = useContext(UserContext);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
@@ -14,20 +14,17 @@ function ClientOrdersPage() {
         const response = await fetch(`${API}/orders`);
         const data = await response.json();
         if (response.ok) {
-          const clientOrders = data.filter(order => order.client_id === user.user_id);
+          const clientOrders = data.filter(o => o.client_id === user.user_id);
           setOrders(clientOrders);
         } else {
           setError('Ошибка при загрузке заказов');
         }
-      } catch (err) {
+      } catch {
         setError('Не удалось подключиться к серверу');
       }
     };
-
-    if (user) {
-      fetchOrders();
-    }
-  }, [user, API]);
+    if (user) fetchOrders();
+  }, [user]);
 
   const pending   = orders.filter(o => o.status === 'pending');
   const confirmed = orders.filter(o => o.status === 'confirmed');
@@ -39,19 +36,19 @@ function ClientOrdersPage() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <h3>Ожидают</h3>
-      {pending.length ? pending.map(o => (
-        <div key={o.id}>#{o.id} — {o.date_from} → {o.date_to}</div>
-      )) : <p>Нет ожидающих заказов</p>}
+      {pending.length
+        ? pending.map(o => <div key={o.id}>#{o.id} — {o.date_from} → {o.date_to}</div>)
+        : <p>Нет ожидающих заказов</p>}
 
       <h3>Прошли</h3>
-      {confirmed.length ? confirmed.map(o => (
-        <div key={o.id}>#{o.id} — {o.date_from} → {o.date_to}</div>
-      )) : <p>Нет прошедших заказов</p>}
+      {confirmed.length
+        ? confirmed.map(o => <div key={o.id}>#{o.id} — {o.date_from} → {o.date_to}</div>)
+        : <p>Нет прошедших заказов</p>}
 
       <h3>Удаленные</h3>
-      {cancelled.length ? cancelled.map(o => (
-        <div key={o.id}>#{o.id} — {o.date_from} → {o.date_to}</div>
-      )) : <p>Нет удаленных заказов</p>}
+      {cancelled.length
+        ? cancelled.map(o => <div key={o.id}>#{o.id} — {o.date_from} → {o.date_to}</div>)
+        : <p>Нет удаленных заказов</p>}
     </div>
   );
 }
