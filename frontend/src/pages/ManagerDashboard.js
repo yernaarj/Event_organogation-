@@ -22,7 +22,7 @@ function ManagerDashboard() {
     })();
     (async () => {
       try {
-        const res = await fetch(`${API}/logs`);
+        const res = await fetch(`/api/logs`);
         if (!res.ok) throw new Error();
         setLogs(await res.json());
       } catch {
