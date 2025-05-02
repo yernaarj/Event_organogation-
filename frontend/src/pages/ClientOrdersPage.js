@@ -11,7 +11,7 @@ function ClientOrdersPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`${API}/orders`);
+        const response = await fetch('/api/orders');
         const data = await response.json();
         if (response.ok) {
           const clientOrders = data.filter(o => o.client_id === user.user_id);
