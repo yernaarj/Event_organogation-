@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
 
 export default function EditOrderPage() {
-  const API = '/api';
+  const API = process.env.REACT_APP_API_URL;
   const { user } = useContext(UserContext);
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function EditOrderPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res =  await fetch(`/api/orders/${orderId}`, { … })
+        const res =  await fetch(`${API}/orders/${orderId}`, { … })
         if (!res.ok) throw new Error();
         const o = await res.json();
         setOrder(o);
@@ -32,7 +32,7 @@ export default function EditOrderPage() {
     e.preventDefault();
     if (!window.confirm('Сохранить изменения?')) return;
     try {
-      const res = await fetch(`/api/orders/${orderId}`, { … })
+      const res = await fetch(`${API}/orders/${orderId}`, { … })
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -52,7 +52,7 @@ export default function EditOrderPage() {
   const handleDelete = async () => {
     if (!window.confirm('Удалить заказ?')) return;
     try {
-      const res = await fetch('/api/orders/${orderId}`, { method: 'DELETE' });
+      const res = await fetch('${API}/orders/${orderId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       alert('Удалён');
       navigate(user.role === 'manager' ? '/manager-dashboard' : '/my-orders');
