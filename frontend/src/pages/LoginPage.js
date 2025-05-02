@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
 
 function LoginPage() {
-  const API = '/api';
+  const API = process.env.REACT_APP_API_URL;
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ function LoginPage() {
       return;
     }
     try {
-      const res =await fetch('/api/login',       { … })
+      const res =await fetch('${API}/login',       { … })
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(formData)
